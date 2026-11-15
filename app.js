@@ -45,26 +45,34 @@
     description: 'Сила войск по дому: пехота 1, рыцарь 2, корабль 1, осадная башня 4; суша и море отдельно; сильнейший отряд; сила карт на руке.',
     fn: (armies, cards) => cbPower(armies, cards),
   });
+  // Индекс силы: одна формула для гонки и для графиков по раундам. army — Map дом -> сила армии.
+  window.cbIndex = function (houses, army) {
+    const n = houses.length || 1;
+    const best = (f) => Math.max(1, ...houses.map(f));
+    const mA = best((h) => army.get(h.house) || 0), mL = best((h) => +h.lands), mC = best((h) => +h.crowns || 0), mP = best((h) => +h.power), mM = best((h) => +h.muster || 0);
+    return houses.map((h) => {
+      const tracks = ((h.throne === 1 ? 1 : 0) + (h.fiefdoms ? (n + 1 - h.fiefdoms) / n : 0) + (h.court && h.court <= 4 ? (5 - h.court) / 4 : 0)) / 3;
+      const s = 20 * Math.min(1, h.castles / 7) + 20 * (army.get(h.house) || 0) / mA + 10 * (+h.muster || 0) / mM + 10 * h.lands / mL
+        + 10 * (+h.crowns || 0) / mC + 10 * Math.min(1, h.supply / 6) + 10 * h.power / mP + 10 * tracks;
+      const r1 = (x) => Math.round(x * 10) / 10;
+      return { house: h.house, score: Math.round(s),
+        castles_pts: r1(20 * Math.min(1, h.castles / 7)), army_pts: r1(20 * (army.get(h.house) || 0) / mA), muster_pts: r1(10 * (+h.muster || 0) / mM),
+        lands_pts: r1(10 * h.lands / mL), crowns_pts: r1(10 * (+h.crowns || 0) / mC), supply_pts: r1(10 * Math.min(1, h.supply / 6)),
+        power_pts: r1(10 * h.power / mP), tracks_pts: r1(10 * tracks) };
+    }).sort((a, b) => b.score - a.score);
+  };
   dash.calc('strength', {
     inputs: ['houses', 'power'], title: 'Индекс силы дома',
     description: 'Итог 0–100: замки 20% (от 7), армия 20%, найм 10%, земли 10%, короны 10%, снабжение 10% (от 6), власть 10%, места на треках 10%; армия, найм, земли, короны и власть — относительно лучшего дома.',
-    fn: (houses, power) => {
-      const n = houses.length || 1;
-      const army = new Map((power || []).map((p) => [p.house, +p.total]));
-      const best = (f) => Math.max(1, ...houses.map(f));
-      const mA = best((h) => army.get(h.house) || 0), mL = best((h) => +h.lands), mC = best((h) => +h.crowns || 0), mP = best((h) => +h.power), mM = best((h) => +h.muster || 0);
-      return houses.map((h) => {
-        const tracks = ((h.throne === 1 ? 1 : 0) + (h.fiefdoms ? (n + 1 - h.fiefdoms) / n : 0) + (h.court && h.court <= 4 ? (5 - h.court) / 4 : 0)) / 3;
-        const s = 20 * Math.min(1, h.castles / 7) + 20 * (army.get(h.house) || 0) / mA + 10 * (+h.muster || 0) / mM + 10 * h.lands / mL
-          + 10 * (+h.crowns || 0) / mC + 10 * Math.min(1, h.supply / 6) + 10 * h.power / mP + 10 * tracks;
-        const r1 = (x) => Math.round(x * 10) / 10;
-        return { house: h.house, score: Math.round(s),
-          castles_pts: r1(20 * Math.min(1, h.castles / 7)), army_pts: r1(20 * (army.get(h.house) || 0) / mA), muster_pts: r1(10 * (+h.muster || 0) / mM),
-          lands_pts: r1(10 * h.lands / mL), crowns_pts: r1(10 * (+h.crowns || 0) / mC), supply_pts: r1(10 * Math.min(1, h.supply / 6)),
-          power_pts: r1(10 * h.power / mP), tracks_pts: r1(10 * tracks) };
-      }).sort((a, b) => b.score - a.score);
-    },
+    fn: (houses, power) => cbIndex(houses, new Map((power || []).map((p) => [p.house, +p.total]))),
   });
+  dash.calc('histIndex', {
+    inputs: ['history'], title: 'Индекс силы по раундам',
+    description: 'Индекс силы каждого дома на последний снимок каждого раунда, по той же формуле, что в гонке за замками.',
+    fn: (history) => d3.groups(history || [], (r) => +r.round).flatMap(([round, rows]) =>
+      cbIndex(rows, new Map(rows.map((r) => [r.house, +r.army || 0]))).map((s) => ({ round, house: s.house, value: s.score }))),
+  });
+
   dash.calc('winrate', {
     inputs: ['combats'], title: 'Винрейт боёв', description: 'Бои, победы и доля побед по дому, отдельно в нападении и защите.',
     fn: (combats) => cbWinrate(combats),
@@ -102,7 +110,7 @@
 
   // Вкладки
   (function () {
-    const ids = ['overview', 'armies', 'battles'];
+    const ids = ['overview', 'armies', 'battles', 'charts'];
     const show = (id) => {
       document.querySelectorAll('.cb > .cb-panel').forEach((p) => { p.hidden = p.id !== id; });
       document.querySelectorAll('.cb-tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
@@ -401,4 +409,78 @@
                { x0: r.orders, x1: r.total, color: c, opacity: 0.4, tip: `${r.who} — походы: ${r.marches} мин` }],
       };
     }), { aria: 'Минуты на приказы и походы по игрокам' });
+  });
+
+  // Графики по раундам с фильтром домов
+  window.CB_HIST = { sel: null, data: {} };
+  try { const s = JSON.parse(localStorage.getItem('cb-hist-sel') || 'null'); if (Array.isArray(s)) CB_HIST.sel = new Set(s); } catch (e) { /* нет хранилища */ }
+  window.cbLine = function (el, rows, aria) {
+    el.replaceChildren();
+    const sel = CB_HIST.sel;
+    const data = rows.filter((r) => !sel || sel.has(r.house));
+    if (!rows.length) { el.textContent = 'Пока нет данных по раундам'; return; }
+    if (!data.length) { el.textContent = 'Выберите хотя бы один дом'; return; }
+    const W = 1000, H = 300, m = { t: 14, r: 150, b: 30, l: 34 };
+    const rounds = [...new Set(rows.map((r) => +r.round))].sort((a, b) => a - b);
+    const x = d3.scalePoint().domain(rounds).range([m.l + 10, W - m.r]).padding(rounds.length < 2 ? 0.5 : 0);
+    const y = d3.scaleLinear().domain([0, Math.max(1, d3.max(data, (r) => +r.value)) * 1.08]).nice().range([H - m.b, m.t]);
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', aria);
+    const ticks = y.ticks(5);
+    svg.append('g').selectAll('line').data(ticks).join('line').attr('x1', m.l).attr('x2', W - m.r + 6).attr('y1', y).attr('y2', y)
+      .attr('stroke', 'var(--cds-chart-grid, var(--color-border-line))');
+    svg.append('g').selectAll('text').data(ticks).join('text').attr('x', m.l - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((v) => v);
+    svg.append('g').selectAll('text').data(rounds).join('text').attr('x', x).attr('y', H - m.b + 18).attr('text-anchor', 'middle').text((r) => 'Раунд ' + r);
+    const tip = d3.select(el).append('div').attr('class', 'cb-tip').style('opacity', 0);
+    const series = d3.groups(data, (r) => r.house).map(([house, pts]) => [house, pts.slice().sort((a, b) => a.round - b.round)]);
+    const labels = series.map(([house, pts]) => ({ house, last: pts[pts.length - 1], y: y(+pts[pts.length - 1].value) })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < 14) labels[i].y = labels[i - 1].y + 14;
+    series.forEach(([house, pts]) => {
+      const c = cbHouse(house).c;
+      svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', c).attr('stroke-width', 2.5).attr('stroke-linejoin', 'round')
+        .attr('d', d3.line().x((p) => x(+p.round)).y((p) => y(+p.value)));
+      svg.append('g').selectAll('circle').data(pts).join('circle').attr('cx', (p) => x(+p.round)).attr('cy', (p) => y(+p.value)).attr('r', 5)
+        .attr('fill', c).attr('stroke', 'var(--color-panel)').attr('stroke-width', 1.5).style('cursor', 'default')
+        .on('mouseenter', (ev, p) => tip.style('opacity', 1).text(`${house}, раунд ${p.round}: ${p.value}`))
+        .on('mousemove', (ev) => { const [mx, my] = d3.pointer(ev, el); tip.style('left', (mx + 12) + 'px').style('top', (my - 12) + 'px'); })
+        .on('mouseleave', () => tip.style('opacity', 0));
+    });
+    labels.forEach((l) => svg.append('text').attr('class', 'cb-val').attr('x', x(+l.last.round) + 10).attr('y', l.y).attr('dy', '0.32em')
+      .style('fill', cbHouse(l.house).c).style('font-weight', 600).text(`${l.house} ${l.last.value}`));
+  };
+  window.cbHistRepaint = () => document.querySelectorAll('[data-hist-name]').forEach((el) => cbLine(el, CB_HIST.data[el.dataset.histName] || [], el.dataset.histAria));
+  window.cbHistChips = function (rows) {
+    const box = document.getElementById('hist-filter');
+    if (!box) return;
+    const order = Object.keys(CB_HOUSES);
+    const houses = [...new Set(rows.map((r) => r.house))].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    const on = (h) => !CB_HIST.sel || CB_HIST.sel.has(h);
+    const save = () => { try { localStorage.setItem('cb-hist-sel', JSON.stringify(CB_HIST.sel ? [...CB_HIST.sel] : null)); } catch (e) { /* нет хранилища */ } };
+    const root = d3.select(box);
+    root.selectAll('*').remove();
+    root.append('button').attr('type', 'button').attr('class', 'cb-fchip cb-fall').attr('aria-pressed', String(houses.every(on))).text('Все дома')
+      .on('click', () => { CB_HIST.sel = houses.every(on) ? new Set() : null; save(); cbHistChips(rows); cbHistRepaint(); });
+    houses.forEach((h) => {
+      const b = root.append('button').attr('type', 'button').attr('class', 'cb-fchip').attr('aria-pressed', String(on(h)))
+        .style('--hc', cbHouse(h).c).on('click', () => {
+          if (!CB_HIST.sel) CB_HIST.sel = new Set(houses);
+          if (CB_HIST.sel.has(h)) CB_HIST.sel.delete(h); else CB_HIST.sel.add(h);
+          if (houses.every((x) => CB_HIST.sel.has(x))) CB_HIST.sel = null;
+          save(); cbHistChips(rows); cbHistRepaint();
+        });
+      b.append('i');
+      b.append('span').text(h);
+    });
+  };
+  [['histIndexChart', 'histIndex', null, 'Индекс силы домов по раундам'],
+   ['histPowerChart', 'history', 'power', 'Жетоны власти домов по раундам'],
+   ['histArmyChart', 'history', 'army', 'Сила армии домов по раундам']].forEach(([name, src, field, aria]) => {
+    dash.draw(name, (el) => {
+      const d = dash.data(src);
+      const raw = d.status === 'ok' && Array.isArray(d.data) ? d.data : [];
+      CB_HIST.data[name] = field ? raw.map((r) => ({ round: +r.round, house: r.house, value: +r[field] || 0 })) : raw;
+      el.dataset.histName = name;
+      el.dataset.histAria = aria;
+      if (src === 'history') cbHistChips(raw);
+      cbLine(el, CB_HIST.data[name], aria);
+    });
   });
