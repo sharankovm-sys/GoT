@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cum back — сводка партии</title>
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --cds-font-size-caption: 12.5px; --cds-font-size-body: 14.5px; --cds-font-size-heading: 18px; --cds-font-size-title: 28px;
+    --cds-font-weight-medium: 600;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 12px; --cds-gap-lg: 18px; --cds-gap-xl: 28px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 16px; --cds-pad-xl: 24px;
+    --cds-radius: 10px;
+    --color-bg: #f6f4ef; --color-panel: #ffffff; --color-fg: #1f1d1a; --color-fg-muted: #6b665e; --color-border-line: #e3ded4;
+    --color-ok: #2f9e57; --color-bad: #c0392b;
+    --cds-text-secondary: #6b665e; --cds-surface-popover: #ffffff; --cds-border: #e3ded4; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12);
+    --cds-chart-grid: #ece8e0; --cds-chart-axis: #cfc9bd;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --color-bg: #1b1a18; --color-panel: #252320; --color-fg: #ece8e1; --color-fg-muted: #a39d93; --color-border-line: #3a3732;
+            --color-ok: #4cc27a; --color-bad: #e2604f; --cds-text-secondary: #a39d93; --cds-surface-popover: #2c2a26; --cds-border: #3a3732;
+            --cds-chart-grid: #34312c; --cds-chart-axis: #4a463f; }
+  }
+  html, body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
+  body { padding: 24px 16px 48px; }
+  .cb-page { max-width: 1180px; margin: 0 auto; }
+  [hidden] { display: none !important; }
+</style>
+<script src="d3.min.js"></script>
+<script src="data.js"></script>
+<script src="shim.js"></script>
+</head>
+<body>
+<div class="cb-page">
+<style>
+  .cb { display: flex; flex-direction: column; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); color: var(--color-fg);
+        --cb-gold: #c9a227; --cb-ice: #4aa3c7; --cb-blood: #c0392b; --cb-ember: #e67e22; --cb-moss: #2f9e57; --cb-violet: #8e6cc9; }
+  .cb-ico { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* header */
+  .cb-hero { position: relative; border-radius: calc(var(--cds-radius) * 2); padding: var(--cds-pad-xl); overflow: hidden;
+             background: linear-gradient(135deg, color-mix(in srgb, var(--cb-gold) 16%, var(--color-panel)), var(--color-panel) 55%, color-mix(in srgb, var(--cb-blood) 10%, var(--color-panel)));
+             border: 1px solid color-mix(in srgb, var(--cb-gold) 35%, var(--color-border-line)); }
+  .cb-banner { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: var(--cds-gap-md); }
+  .cb-banner i { flex: 1; }
+  .cb-title { display: flex; align-items: center; gap: var(--cds-gap-sm); font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-sm); }
+  .cb-title .cb-ico { color: var(--cb-gold); width: 1.1em; height: 1.1em; }
+  .cb-lede { font-size: var(--cds-font-size-body); margin: 0 0 var(--cds-gap-sm); line-height: 1.6; }
+  .cb-lede b { font-weight: var(--cds-font-weight-medium); }
+  .cb-pill-now { display: inline-block; padding: 0 8px; border-radius: 999px; background: color-mix(in srgb, var(--cb-ember) 22%, transparent); color: var(--color-fg); }
+  .cb-muted { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0; }
+
+  /* section heads */
+  .cb-h { display: flex; align-items: center; gap: var(--cds-gap-sm); font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-xs); }
+  .cb-h .cb-ico { width: 1.15em; height: 1.15em; color: var(--cb-gold); }
+  .cb-sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0 0 var(--cds-gap-md); line-height: 1.5; }
+
+  /* tiles */
+  .cb-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--cds-gap-md); }
+  .cb-tile { position: relative; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); overflow: hidden; }
+  .cb-tile::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--acc); }
+  .cb-tile-label { display: flex; align-items: center; gap: 6px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .cb-tile-label .cb-ico { color: var(--acc); width: 16px; height: 16px; }
+  .cb-tile-value { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; margin-top: var(--cds-gap-xs); }
+
+  /* castle race */
+  .cb-race { display: flex; flex-direction: column; gap: 6px; }
+  .cb-rg { display: grid; grid-template-columns: minmax(150px, 1.3fr) minmax(170px, 1.3fr) minmax(58px, .5fr) minmax(58px, .5fr) minmax(110px, .9fr) minmax(58px, .5fr) minmax(58px, .5fr) minmax(150px, 1.4fr);
+           align-items: center; column-gap: var(--cds-gap-md); }
+  .cb-race-head { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: 0 var(--cds-pad-md) 2px calc(var(--cds-pad-md) + 4px); }
+  .cb-race-head span { display: inline-flex; align-items: center; gap: 4px; justify-content: center; }
+  .cb-race-head span:first-child { justify-content: flex-start; }
+  .cb-race-head .cb-ico { width: 14px; height: 14px; }
+  .cb-race-row { padding: 8px var(--cds-pad-md); border-radius: var(--cds-radius); background: linear-gradient(90deg, color-mix(in srgb, var(--hc) 10%, var(--color-panel)), var(--color-panel) 35%);
+                 border: 1px solid var(--color-border-line); border-left: 4px solid var(--hc); }
+  .cb-rg-name { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+  .cb-rg-name b { font-weight: var(--cds-font-weight-medium); }
+  .cb-rg-name span { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cb-rg-cell { display: flex; align-items: center; justify-content: center; gap: 5px; font-variant-numeric: tabular-nums; min-width: 0; }
+  .cb-rg-cell b { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); line-height: 1; }
+  .cb-rg-cell small { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .cb-rg-cell .cb-ico { width: 16px; height: 16px; color: var(--hc); }
+  .cb-rg-lbl { display: none; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .cb-pips { display: flex; gap: 2px; }
+  .cb-pip { width: 17px; height: 17px; }
+  .cb-barrels { display: inline-flex; gap: 0; }
+  .cb-barrel { width: 13px; height: 15px; }
+  .cb-score { display: flex; align-items: center; gap: var(--cds-gap-sm); }
+  .cb-score-track { flex: 1; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--color-fg) 8%, transparent); overflow: hidden; }
+  .cb-score-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, color-mix(in srgb, var(--hc) 70%, transparent), var(--hc)); }
+  .cb-score-track { display: flex; gap: 1px; }
+  .cb-score-seg { height: 100%; flex: none; }
+  .cb-score b { flex: none; width: 3.4ch; padding: 3px 0; border-radius: 6px; text-align: center; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); font-variant-numeric: tabular-nums; }
+  .cb-score b.cb-score-top { background: linear-gradient(180deg, #e2bf4a, var(--cb-gold)); color: #1a1a1a; font-weight: 600; box-shadow: 0 0 0 2px color-mix(in srgb, var(--cb-gold) 35%, transparent); }
+  .cb-formula { margin-top: var(--cds-gap-md); padding: var(--cds-pad-md); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-panel); }
+  .cb-formula-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px var(--cds-gap-sm); margin-bottom: var(--cds-gap-sm); }
+  .cb-formula-head b { font-weight: var(--cds-font-weight-medium); }
+  .cb-formula-head span { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .cb-formula-bar { display: flex; gap: 3px; }
+  .cb-formula-bar > span { display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 6px 4px; border-radius: 6px; border-top: 4px solid var(--fc);
+                            background: color-mix(in srgb, var(--fc) 16%, var(--color-panel)); font-size: var(--cds-font-size-caption); text-align: center; white-space: nowrap; }
+  .cb-formula-bar b { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); line-height: 1.1; }
+  .cb-formula-bar small { color: var(--color-fg-muted); font-size: 11px; }
+  .cb-formula .cb-sub { margin: var(--cds-gap-sm) 0 0; }
+  @media (max-width: 760px) { .cb-formula-bar { flex-wrap: wrap; } .cb-formula-bar > span { flex: 1 1 28% !important; } }
+  @media (max-width: 860px) {
+    .cb-rg { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 8px; }
+    .cb-race-head { display: none; }
+    .cb-rg-name, .cb-rg-castles, .cb-rg-index { grid-column: 1 / -1; }
+    .cb-rg-cell { justify-content: flex-start; }
+    .cb-rg-lbl { display: inline; }
+  }
+
+  /* tracks */
+  .cb-tracks { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--cds-gap-md); }
+  .cb-track { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
+  .cb-track-head { display: flex; align-items: center; gap: var(--cds-gap-sm); padding: var(--cds-pad-md) var(--cds-pad-lg);
+                   background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 28%, transparent), transparent); border-bottom: 1px solid var(--color-border-line); }
+  .cb-track-head .cb-badge { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--tc); color: #fff; }
+  .cb-track-head .cb-badge .cb-ico { width: 20px; height: 20px; }
+  .cb-track-head b { font-weight: var(--cds-font-weight-medium); }
+  .cb-track-head span { display: block; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .cb-track ol { list-style: none; margin: 0; padding: var(--cds-pad-sm) var(--cds-pad-md); display: flex; flex-direction: column; gap: 6px; }
+  .cb-track li { display: flex; align-items: center; gap: var(--cds-gap-sm); }
+  .cb-place { width: 22px; text-align: center; font-variant-numeric: tabular-nums; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .cb-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; background: var(--hc); color: var(--ht); font-size: var(--cds-font-size-caption); font-weight: var(--cds-font-weight-medium); }
+  .cb-chip.cb-first { box-shadow: 0 0 0 2px var(--color-panel), 0 0 0 4px var(--cb-gold); }
+  .cb-crown { width: 16px; height: 16px; color: var(--cb-gold); }
+
+  /* table */
+  .cb-wrap { overflow-x: auto; }
+  .cb-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+  .cb-table th { text-align: right; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .cb-table th .cb-ico { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+  .cb-table td { text-align: right; padding: var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .cb-table th:first-child, .cb-table td:first-child, .cb-table .cb-l { text-align: left; }
+  .cb-table tbody tr:hover td { background: color-mix(in srgb, var(--hc, var(--cb-gold)) 8%, transparent); }
+  .cb-table td:first-child { border-left: 4px solid var(--hc, transparent); }
+  .cb-tokens { display: inline-flex; gap: 2px; margin-left: 6px; vertical-align: middle; }
+  .cb-tokens i { width: 7px; height: 7px; border-radius: 50%; background: var(--hc); }
+
+  /* chart */
+  .cb-chart { position: relative; min-height: 220px; }
+  .cb-chart svg text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); }
+  .cb-chart svg .cb-val { fill: var(--color-fg); font-variant-numeric: tabular-nums; }
+  .cb-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; }
+  .cb-legend { display: flex; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: var(--cds-gap-sm); }
+  .cb-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .cb-legend i { width: 18px; height: 10px; border-radius: 2px; background: var(--cb-gold); }
+  .cb-legend i.cb-light { opacity: .4; }
+
+  /* chronicle */
+  .cb-chron { list-style: none; margin: 0; padding: 0 0 0 var(--cds-pad-sm); font-size: var(--cds-font-size-body); border-left: 2px solid var(--color-border-line); }
+  .cb-chron li { position: relative; display: grid; grid-template-columns: 86px 1fr; gap: var(--cds-gap-sm); padding: 6px 0 6px var(--cds-pad-sm); }
+  .cb-chron li::before { content: ""; position: absolute; left: calc(-1 * var(--cds-pad-sm) - 6px); top: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--hc, var(--color-fg-muted)); box-shadow: 0 0 0 3px var(--color-bg); }
+  .cb-chron time { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; padding-top: 2px; }
+
+  .cb-empty { display: flex; gap: var(--cds-gap-md); align-items: center; background: var(--color-panel); border: 1px dashed color-mix(in srgb, var(--cb-blood) 45%, var(--color-border-line)); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); color: var(--color-fg-muted); margin: 0; }
+  .cb-empty .cb-ico { width: 32px; height: 32px; color: var(--cb-blood); }
+  .cb-details summary { cursor: pointer; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .cb-details ul { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding-left: 1.2em; }
+  /* tabs */
+  .cb-tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--color-border-line); padding-bottom: 2px; margin-top: calc(-1 * var(--cds-gap-md)); }
+  .cb-tab { display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; border-bottom: none; background: none; color: var(--color-fg-muted);
+            font: inherit; font-size: var(--cds-font-size-body); padding: var(--cds-pad-sm) var(--cds-pad-md); border-radius: var(--cds-radius) var(--cds-radius) 0 0; cursor: pointer; }
+  .cb-tab .cb-ico { width: 18px; height: 18px; }
+  .cb-tab[aria-selected=true] { color: var(--color-fg); background: var(--color-panel); border-color: var(--color-border-line); box-shadow: inset 0 3px 0 var(--cb-gold); }
+  .cb-panel { display: flex; flex-direction: column; gap: var(--cds-gap-xl); }
+
+  /* power bars & cards */
+  .cb-cards { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
+  .cb-cards-row { display: grid; grid-template-columns: minmax(110px, 160px) 1fr auto; gap: var(--cds-gap-md); align-items: center; padding: var(--cds-pad-sm) var(--cds-pad-md); background: var(--color-panel); border: 1px solid var(--color-border-line); border-left: 4px solid var(--hc); border-radius: var(--cds-radius); }
+  .cb-card-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cb-hc { display: inline-flex; align-items: center; gap: 6px; font-size: var(--cds-font-size-caption); padding: 2px 8px 2px 2px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--hc) 55%, var(--color-border-line)); }
+  .cb-hc i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--hc); color: var(--ht); font-style: normal; font-weight: var(--cds-font-weight-medium); }
+  .cb-hc.cb-used { opacity: .45; text-decoration: line-through; }
+  .cb-sum { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); white-space: nowrap; }
+  .cb-sum small { color: var(--color-fg-muted); font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-caption); }
+  @media (max-width: 560px) { .cb-cards-row { grid-template-columns: 1fr auto; } .cb-card-list { grid-column: 1 / -1; } }
+
+  /* luck */
+  .cb-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--cds-gap-lg); }
+  .cb-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+  .cb-card .cb-h { font-size: var(--cds-font-size-body); }
+  .cb-luck-good { color: var(--color-ok); }
+  .cb-luck-bad { color: var(--color-bad); }
+  .cb-deck { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .cb-tobcard { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--cds-pad-sm) 2px; border-radius: var(--cds-radius); border: 1px solid var(--color-border-line);
+                background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 22%, var(--color-panel)), var(--color-panel)); font-variant-numeric: tabular-nums; }
+  .cb-tobcard b { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-heading); }
+  .cb-tobcard span { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  [data-dash-source-state=refreshing] { opacity: .5; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="cbi-throne" viewBox="0 0 24 24"><path d="M6 21v-9h12v9M6 12V4l2 2.5L10 3l2 3.5L14 3l2 3.5L18 4v8M9 21v-4.5h6V21M4 21h16"/></symbol>
+    <symbol id="cbi-sword" viewBox="0 0 24 24"><path d="M20 4l-9.5 9.5M20 4h-4M20 4v4M7.5 12.5l4 4M9.5 14.5L4 20M4 20l-0.5 0.5"/></symbol>
+    <symbol id="cbi-raven" viewBox="0 0 24 24"><path d="M21 7l-3-1c-1-1.5-3-2-4.5-1C11 6.5 10 9 10 11l-6 6 4.5-1L7 20l4-3c4 0 8-3 8-8l2-2z"/><circle cx="16" cy="7.5" r="0.6"/></symbol>
+    <symbol id="cbi-castle" viewBox="0 0 24 24"><path d="M4 21V9h2.5V6H9v3h2V6h2v3h2V6h2.5v3H20v12zM10 21v-4a2 2 0 0 1 4 0v4"/></symbol>
+    <symbol id="cbi-castle-fill" viewBox="0 0 24 24"><path d="M4 21V9h2.5V6H9v3h2V6h2v3h2V6h2.5v3H20v12h-6v-4a2 2 0 0 0-4 0v4z"/></symbol>
+    <symbol id="cbi-snow" viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 6.5l2.5-2M9.5 19.5L12 17.5l2.5 2"/></symbol>
+    <symbol id="cbi-swords" viewBox="0 0 24 24"><path d="M4 4l10 10M4 4h3.5M4 4v3.5M20 4L10 14M20 4h-3.5M20 4v3.5M12.5 17.5l4 4M15 20l-2.5-2.5 5-5L20 15M11.5 17.5l-4 4M9 20l2.5-2.5-5-5L4 15"/></symbol>
+    <symbol id="cbi-flame" viewBox="0 0 24 24"><path d="M12 3c.8 3.5 5 5.2 5 10a5 5 0 0 1-10 0c0-2.6 1.5-3.8 2-5.8.8 1 1.4 1.6 2.4 1.6C12.5 7 11.6 5 12 3z"/></symbol>
+    <symbol id="cbi-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.6 8-8 9-4.4-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="cbi-scroll" viewBox="0 0 24 24"><path d="M7 4h10.5A2.5 2.5 0 0 1 20 6.5V17a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V6a2 2 0 1 1 4 0v12M10 8h7M10 12h7M10 16h4"/></symbol>
+    <symbol id="cbi-hourglass" viewBox="0 0 24 24"><path d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9"/></symbol>
+    <symbol id="cbi-crown" viewBox="0 0 24 24"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="currentColor"/></symbol>
+    <symbol id="cbi-banner" viewBox="0 0 24 24"><path d="M6 21V3M6 4h12l-3 4 3 4H6"/></symbol>
+    <symbol id="cbi-barrel" viewBox="0 0 24 24"><path d="M7 3h10c1.5 3 1.5 15 0 18H7C5.5 18 5.5 6 7 3zM6.2 8h11.6M6.2 16h11.6"/></symbol>
+    <symbol id="cbi-barrel-fill" viewBox="0 0 24 24"><path d="M7 3h10c1.5 3 1.5 15 0 18H7C5.5 18 5.5 6 7 3z"/></symbol>
+    <symbol id="cbi-token" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l1.4 2.9 3.1.4-2.3 2.2.6 3.1-2.8-1.5-2.8 1.5.6-3.1-2.3-2.2 3.1-.4z"/></symbol>
+    <symbol id="cbi-fist" viewBox="0 0 24 24"><path d="M5 20l5-5M12 4l8 8-5 5-8-8zM14 2l8 8M9.5 14.5l-3-3"/></symbol>
+    <symbol id="cbi-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="cbi-cards" viewBox="0 0 24 24"><rect x="3" y="6" width="11" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v13"/></symbol>
+    <symbol id="cbi-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+    <symbol id="cbi-crownline" viewBox="0 0 24 24"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></symbol>
+    <symbol id="cbi-land" viewBox="0 0 24 24"><path d="M3 19l6-10 4 6 2.5-3.5L21 19z"/><circle cx="16.5" cy="6.5" r="1.5"/></symbol>
+    <symbol id="cbi-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/></symbol>
+  </defs>
+</svg>
+
+<div class="cb">
+  <header id="summary" class="cb-hero">
+    <div class="cb-banner" aria-hidden="true">
+      <i style="background:#c0392b"></i><i style="background:#e6c229"></i><i style="background:#9aa5b1"></i><i style="background:#4b5563"></i><i style="background:#2f9e57"></i><i style="background:#e67e22"></i>
+    </div>
+    <h1 class="cb-title"><svg class="cb-ico"><use href="#cbi-throne"/></svg>Cum back — сводка партии</h1>
+    <p class="cb-lede">
+      Раунд <b data-draw="round" data-source="status" data-field="round" data-row="0">—</b> из <b data-draw="maxRounds" data-source="status" data-field="max_rounds" data-row="0">—</b>.
+      Больше всего замков (<b data-draw="topCastles" data-source="leaders" data-field="castles" data-row="0">—</b>) у: <b data-draw="topNames" data-source="leaders" data-field="names" data-row="0">—</b>.
+      Дольше всех думал <b data-draw="slowName" data-source="think" data-field="who" data-row="0">—</b>: <b data-draw="slowMin" data-source="think" data-field="total" data-row="0">—</b> мин.
+      Сейчас ждём: <b class="cb-pill-now" data-draw="waiting" data-source="status" data-field="waiting" data-row="0">—</b>
+    </p>
+    <p class="cb-muted">Снимок партии от <span data-draw="snapshot" data-source="status" data-field="snapshot_msk" data-row="0">—</span> МСК, последний ход в логе: <span data-draw="lastMove" data-source="status" data-field="last_move_msk" data-row="0">—</span>. Обновляется автоматически, пока работает бот.</p>
+  </header>
+
+  <nav class="cb-tabs" role="tablist" id="tabs" aria-label="Разделы">
+    <button class="cb-tab" role="tab" aria-selected="true" aria-controls="overview" data-tab="overview" id="tab-overview"><svg class="cb-ico"><use href="#cbi-compass"/></svg>Обзор</button>
+    <button class="cb-tab" role="tab" aria-selected="false" aria-controls="armies" data-tab="armies" id="tab-armies"><svg class="cb-ico"><use href="#cbi-fist"/></svg>Армии</button>
+    <button class="cb-tab" role="tab" aria-selected="false" aria-controls="battles" data-tab="battles" id="tab-battles"><svg class="cb-ico"><use href="#cbi-dice"/></svg>Бои и удача</button>
+  </nav>
+
+  <div class="cb-panel" id="overview" role="tabpanel" aria-labelledby="tab-overview">
+    <section id="kpi" class="cb-tiles">
+      <div class="cb-tile" id="kpi-wildlings" style="--acc: var(--cb-ice)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-snow"/></svg>Сила одичалых</div><div class="cb-tile-value" data-draw="wildlings" data-source="status" data-field="wildlings" data-row="0">—</div></div>
+      <div class="cb-tile" id="kpi-combats" style="--acc: var(--cb-blood)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-swords"/></svg>Боёв</div><div class="cb-tile-value" data-draw="combatsN" data-source="status" data-field="combats" data-row="0">—</div></div>
+      <div class="cb-tile" id="kpi-raids" style="--acc: var(--cb-ember)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-flame"/></svg>Набегов</div><div class="cb-tile-value" data-draw="raidsN" data-source="status" data-field="raids" data-row="0">—</div></div>
+      <div class="cb-tile" id="kpi-supports" style="--acc: var(--cb-moss)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-shield"/></svg>Поддержек в боях</div><div class="cb-tile-value" data-draw="supportsN" data-source="status" data-field="supports" data-row="0">—</div></div>
+      <div class="cb-tile" id="kpi-log" style="--acc: var(--cb-violet)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-scroll"/></svg>Записей в логе</div><div class="cb-tile-value" data-draw="logN" data-source="status" data-field="log_entries" data-row="0">—</div></div>
+    </section>
+
+    <section id="race">
+      <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-castle"/></svg>Гонка за замками</h2>
+      <p class="cb-sub">Вся сила дома в одной строке. Для победы нужно 7 замков и крепостей. Короны — сколько корон в землях дома (дают власть при сборе власти и при «Игре престолов»). Армия — сила войск на карте. Индекс силы — итог по всем факторам от 0 до 100, как он считается — внизу страницы.</p>
+      <div class="cb-rg cb-race-head" aria-hidden="true">
+        <span>Дом</span>
+        <span><svg class="cb-ico"><use href="#cbi-castle"/></svg>Замки</span>
+        <span><svg class="cb-ico"><use href="#cbi-land"/></svg>Земли</span>
+        <span><svg class="cb-ico"><use href="#cbi-crownline"/></svg>Короны</span>
+        <span><svg class="cb-ico"><use href="#cbi-barrel"/></svg>Снабжение</span>
+        <span><svg class="cb-ico"><use href="#cbi-token"/></svg>Власть</span>
+        <span><svg class="cb-ico"><use href="#cbi-fist"/></svg>Армия</span>
+        <span><svg class="cb-ico"><use href="#cbi-gauge"/></svg>Индекс силы</span>
+      </div>
+      <div class="cb-race" data-draw="race" data-source="houses power strength"></div>
+      <div class="cb-formula" id="formula">
+        <div class="cb-formula-head"><b>Как считается индекс силы</b><span>сумма семи частей, максимум 100 баллов; цвета совпадают с полосками индекса выше</span></div>
+        <div class="cb-formula-bar">
+          <span style="flex: 30; --fc: #c9a227"><b>30</b>Замки<small>из 7 для победы</small></span>
+          <span style="flex: 20; --fc: #c0392b"><b>20</b>Армия<small>к лучшему дому</small></span>
+          <span style="flex: 10; --fc: #2f9e57"><b>10</b>Земли<small>к лучшему</small></span>
+          <span style="flex: 10; --fc: #e67e22"><b>10</b>Короны<small>к лучшему</small></span>
+          <span style="flex: 10; --fc: #a0703c"><b>10</b>Снабж.<small>из 6</small></span>
+          <span style="flex: 10; --fc: #8e6cc9"><b>10</b>Власть<small>к лучшему</small></span>
+          <span style="flex: 10; --fc: #3b6ea8"><b>10</b>Треки<small>места</small></span>
+        </div>
+        <p class="cb-sub">Пример: 3 замка из 7 дают 30 × 3/7 ≈ 13 баллов, а армия 6 при лучшей армии 6 даёт все 20. «К лучшему» — доля от самого сильного дома по этому показателю. Треки — среднее место на трёх треках: первое место везде даёт 10 баллов. Наведите на индекс дома, чтобы увидеть его разбивку. Это оценка дашборда, а не правило игры.</p>
+      </div>
+    </section>
+
+    <section id="tracks">
+      <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-banner"/></svg>Треки влияния</h2>
+      <p class="cb-sub">Первое место на Железном троне ходит первым и решает ничьи, в Вотчинах — побеждает в бою при равной силе, при Королевском дворе — получает больше звёздных приказов.</p>
+      <div class="cb-tracks" data-source="houses">
+        <div class="cb-track" id="track-throne" style="--tc: #b8860b">
+          <div class="cb-track-head"><div class="cb-badge"><svg class="cb-ico"><use href="#cbi-throne"/></svg></div><div><b>Железный трон</b><span>порядок хода, ничьи</span></div></div>
+          <ol data-draw="trackThrone"></ol>
+        </div>
+        <div class="cb-track" id="track-fiefdoms" style="--tc: #a33a2c">
+          <div class="cb-track-head"><div class="cb-badge"><svg class="cb-ico"><use href="#cbi-sword"/></svg></div><div><b>Вотчины</b><span>сила в бою, меч</span></div></div>
+          <ol data-draw="trackFiefdoms"></ol>
+        </div>
+        <div class="cb-track" id="track-court" style="--tc: #3b4a63">
+          <div class="cb-track-head"><div class="cb-badge"><svg class="cb-ico"><use href="#cbi-raven"/></svg></div><div><b>Королевский двор</b><span>звёздные приказы, ворон</span></div></div>
+          <ol data-draw="trackCourt"></ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="standings">
+      <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-shield"/></svg>Положение домов</h2>
+      <p class="cb-sub">Власть — жетоны власти в запасе. Войска — юниты на карте.</p>
+      <div class="cb-wrap">
+        <table class="cb-table" data-source="houses" data-row-key="house">
+          <thead><tr>
+            <th data-field="house">Дом</th>
+            <th data-field="player" class="cb-l">Игрок</th>
+            <th data-field="castles">Замки</th>
+            <th data-field="lands">Земли</th>
+            <th data-field="supply">Снабжение</th>
+            <th data-field="power" class="cb-l">Власть</th>
+            <th data-field="footmen">Пехота</th>
+            <th data-field="knights">Рыцари</th>
+            <th data-field="ships">Корабли</th>
+          </tr></thead>
+          <tbody data-draw="housesBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="speed">
+      <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-hourglass"/></svg>Кто сколько думал</h2>
+      <p class="cb-sub">Минуты на приказы и походы за всю партию. Для приказов — от начала фазы замыслов до последней отправки, для похода — от предыдущего события в логе.</p>
+      <div class="cb-legend"><span id="leg-orders"><i></i>Приказы</span><span id="leg-marches"><i class="cb-light"></i>Походы</span></div>
+      <div class="cb-chart" id="speed-chart" data-draw="speedChart" data-source="think actions"></div>
+    </section>
+
+    <section id="chronicle">
+      <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-scroll"/></svg>Хроника</h2>
+      <p class="cb-sub">События из лога игры, сначала новые. Время московское.</p>
+      <ul class="cb-chron" data-draw="chronList" data-source="chronicle"></ul>
+    </section>
+  </div>
+
+  <div class="cb-panel" id="armies" role="tabpanel" aria-labelledby="tab-armies" hidden>
+    <section id="army-power">
+      <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-fist"/></svg>Военная мощь домов</h2>
+      <p class="cb-lede">Сильнее всех на карте — <b data-draw="armyTop" data-source="power" data-field="house" data-row="0">—</b>: <b data-draw="armyTopV" data-source="power" data-field="total" data-row="0">—</b> силы в <b data-draw="armyTopU" data-source="power" data-field="units" data-row="0">—</b> юнитах.</p>
+      <p class="cb-sub">Сила войск по правилам базовой игры: пехота 1, рыцарь 2, корабль 1, осадная башня 4 (только при штурме замка). Без приказов, поддержки, гарнизонов и карт.</p>
+      <div class="cb-legend"><span><i style="opacity:1"></i>Пехота</span><span><i style="opacity:.72"></i>Рыцари</span><span><i style="opacity:.45"></i>Корабли</span><span><i style="opacity:.25"></i>Осадные башни</span></div>
+      <div class="cb-chart" id="power-chart" data-draw="powerChart" data-source="power"></div>
+    </section>
+
+    <section id="army-table">
+      <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-shield"/></svg>Состав армий</h2>
+      <div class="cb-wrap">
+        <table class="cb-table" data-source="power" data-row-key="house">
+          <thead><tr>
+            <th data-field="house">Дом</th>
+            <th data-field="footmen">Пехота</th>
+            <th data-field="knights">Рыцари</th>
+            <th data-field="ships">Корабли</th>
+            <th data-field="siege">Осадные</th>
+            <th data-field="land">Сила на суше</th>
+            <th data-field="sea">Сила на море</th>
+            <th data-field="total">Всего</th>
+            <th data-field="best_label" class="cb-l">Сильнейший отряд</th>
+            <th data-field="hand">Карты на руке</th>
+          </tr></thead>
+          <tbody data-draw="powerBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="army-cards">
+      <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-cards"/></svg>Карты домов</h2>
+      <p class="cb-sub">Число в кружке — сила карты в бою. Зачёркнутые уже сыграны и вернутся, когда дом разыграет все карты.</p>
+      <div class="cb-cards" data-draw="cardsList" data-source="cards"></div>
+    </section>
+  </div>
+
+  <div class="cb-panel" id="battles" role="tabpanel" aria-labelledby="tab-battles" hidden>
+    <p class="cb-empty" id="battles-empty"><svg class="cb-ico"><use href="#cbi-swords"/></svg><span>Боёв пока не было. После первых сражений здесь появятся винрейт боёв, карты прилива битвы, коэффициент удачи каждого дома и бои, которые решил рандом.</span></p>
+    <div class="cb-panel" id="battles-body" hidden>
+      <section id="luck-kpi" class="cb-tiles">
+        <div class="cb-tile" style="--acc: var(--cb-blood)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-swords"/></svg>Боёв</div><div class="cb-tile-value" data-draw="lBattles" data-source="luckSummary" data-field="battles" data-row="0">—</div></div>
+        <div class="cb-tile" style="--acc: var(--cb-gold)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-dice"/></svg>Решил прилив</div><div class="cb-tile-value"><span data-draw="lDecided" data-source="luckSummary" data-field="decided" data-row="0">—</span> <small class="cb-muted">(<span data-draw="lDecidedShare" data-source="luckSummary" data-field="decided_share" data-row="0">—</span>%)</small></div></div>
+        <div class="cb-tile" style="--acc: var(--cb-ice)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-cards"/></svg>Средний прилив</div><div class="cb-tile-value">+<span data-draw="lAvg" data-source="luckSummary" data-field="avg" data-row="0">—</span> <small class="cb-muted">ожидается +<span data-draw="lExp" data-source="luckSummary" data-field="expected" data-row="0">—</span></small></div></div>
+        <div class="cb-tile" style="--acc: var(--cb-moss)"><div class="cb-tile-label"><svg class="cb-ico"><use href="#cbi-token"/></svg>Общий коэффициент удачи</div><div class="cb-tile-value"><span data-draw="lCoef" data-source="luckSummary" data-field="coef" data-row="0">—</span>×</div></div>
+      </section>
+
+      <div class="cb-grid2">
+        <section class="cb-card" id="winrate">
+          <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-swords"/></svg>Винрейт боёв</h2>
+          <p class="cb-sub">Доля выигранных боёв, нападение и защита вместе. Наведите на полосу — покажет раздельно.</p>
+          <div class="cb-chart" data-draw="winChart" data-source="winrate"></div>
+        </section>
+        <section class="cb-card" id="luck">
+          <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-dice"/></svg>Удача в приливе</h2>
+          <p class="cb-sub">Сколько силы дом вытянул сверх среднего (+0,92 за карту). В скобках — коэффициент удачи: 1× — как в среднем, 2× — вдвое больше.</p>
+          <div class="cb-chart" data-draw="luckChart" data-source="luck"></div>
+        </section>
+      </div>
+
+      <section id="deck">
+        <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-cards"/></svg>Колода прилива битвы</h2>
+        <p class="cb-sub">Сколько раз выпала каждая карта и сколько должно было при честной колоде из 24 карт.</p>
+        <div class="cb-deck" data-draw="deck" data-source="tobDist"></div>
+      </section>
+
+      <section id="luck-table">
+        <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-token"/></svg>Удача по домам</h2>
+        <div class="cb-wrap">
+          <table class="cb-table" data-source="luck" data-row-key="house">
+            <thead><tr>
+              <th data-field="house">Дом</th>
+              <th data-field="draws">Карт</th>
+              <th data-field="sum">Сумма</th>
+              <th data-field="avg">В среднем</th>
+              <th data-field="luck">Удача</th>
+              <th data-field="coef">Коэффициент</th>
+              <th data-field="drawn" class="cb-l">Что вытянул</th>
+              <th data-field="saved">Выиграл благодаря</th>
+              <th data-field="robbed">Проиграл из-за</th>
+            </tr></thead>
+            <tbody data-draw="luckBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="battle-list">
+        <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-scroll"/></svg>Все бои</h2>
+        <div class="cb-wrap">
+          <table class="cb-table" data-source="combats" data-row-key="id">
+            <thead><tr>
+              <th data-field="round">Раунд</th>
+              <th data-field="region" class="cb-l">Где</th>
+              <th data-field="attacker" class="cb-l">Нападал</th>
+              <th data-field="attacker_card" class="cb-l">Карта</th>
+              <th data-field="attacker_tob">Прилив</th>
+              <th data-field="attacker_total">Сила</th>
+              <th data-field="defender" class="cb-l">Защищался</th>
+              <th data-field="defender_card" class="cb-l">Карта</th>
+              <th data-field="defender_tob">Прилив</th>
+              <th data-field="defender_total">Сила</th>
+              <th data-field="winner" class="cb-l">Победил</th>
+            </tr></thead>
+            <tbody data-draw="battlesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <details class="cb-details" id="notes">
+    <summary>Откуда данные и как считается</summary>
+    <ul>
+      <li>Данные взяты из лога и состояния партии на swordsandravens.net ботом и выкладываются на эту страницу автоматически.</li>
+      <li>Замки, земли и снабжение — из публичной страницы игры; власть, войска и треки — из состояния партии.</li>
+      <li>Время на ход: если игрок отправил приказы, а потом переотправил, считается последняя отправка.</li>
+      <li>Мощь армии: пехота 1, рыцарь 2, корабль 1, осадная башня 4 (в игре она даёт 4 только при штурме замка или крепости, здесь считается её полная сила).</li>
+      <li>Удача в приливе: сумма силы вытянутых карт минус ожидаемая (+0,92 за карту при колоде из 24 карт). Коэффициент — во сколько раз больше среднего. Бой «решил прилив», если без карт прилива победитель проиграл бы или вышла бы ничья.</li>
+      <li>Короны и земли: земля принадлежит дому, если там его войска или жетон власти; родовые земли (Винтерфелл, Ланниспорт, Пайк, Хайгарден, Солнечное Копьё, Драконий Камень) остаются за домом, пока их никто не занял. Короны и замки взяты из карты игры.</li>
+      <li>Индекс силы (0–100) — оценка дашборда, а не правило игры: замки 30% (от 7 для победы), армия 20%, земли 10%, короны 10%, снабжение 10% (от 6), жетоны власти 10%, места на трёх треках 10%. Армия, земли, короны и власть считаются относительно лучшего дома.</li>
+      <li>Иконки нарисованы для этого дашборда, это не иконки игры.</li>
+    </ul>
+  </details>
+</div>
+
+</div>
+<script src="calcs.js"></script>
+<script src="app.js"></script>
+<script>dash._run();</script>
+</body>
+</html>
