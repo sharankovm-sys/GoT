@@ -54,7 +54,7 @@
       const best = (f) => Math.max(1, ...houses.map(f));
       const mA = best((h) => army.get(h.house) || 0), mL = best((h) => +h.lands), mC = best((h) => +h.crowns || 0), mP = best((h) => +h.power), mM = best((h) => +h.muster || 0);
       return houses.map((h) => {
-        const tracks = ((n + 1 - h.throne) + (n + 1 - h.fiefdoms) + (n + 1 - h.court)) / (3 * n);
+        const tracks = ((h.throne === 1 ? 1 : 0) + (h.fiefdoms ? (n + 1 - h.fiefdoms) / n : 0) + (h.court && h.court <= 4 ? (5 - h.court) / 4 : 0)) / 3;
         const s = 20 * Math.min(1, h.castles / 7) + 20 * (army.get(h.house) || 0) / mA + 10 * (+h.muster || 0) / mM + 10 * h.lands / mL
           + 10 * (+h.crowns || 0) / mC + 10 * Math.min(1, h.supply / 6) + 10 * h.power / mP + 10 * tracks;
         const r1 = (x) => Math.round(x * 10) / 10;
