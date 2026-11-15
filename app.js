@@ -182,7 +182,7 @@
     const pow = new Map((p.status === 'ok' && Array.isArray(p.data) ? p.data : []).map((r) => [r.house, r]));
     const sc = new Map((s.status === 'ok' && Array.isArray(s.data) ? s.data : []).map((r) => [r.house, r.score]));
     const top = Math.max(0, ...sc.values());
-    const rows = d.data.slice().sort((a, b) => (+b.castles - +a.castles) || ((sc.get(b.house) || 0) - (sc.get(a.house) || 0)));
+    const rows = d.data.slice().sort((a, b) => ((sc.get(b.house) || 0) - (sc.get(a.house) || 0)) || (+b.castles - +a.castles));
     rows.forEach((r) => {
       const h = cbHouse(r.house);
       const row = d3.select(el).append('div').attr('class', 'cb-rg cb-race-row').style('--hc', h.c).style('--ht', h.t);
