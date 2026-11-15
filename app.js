@@ -47,19 +47,19 @@
   });
   dash.calc('strength', {
     inputs: ['houses', 'power'], title: 'Индекс силы дома',
-    description: 'Итог 0–100: замки 30% (от 7), армия 20%, земли 10%, короны 10%, снабжение 10% (от 6), власть 10%, места на треках 10%; армия, земли, короны и власть — относительно лучшего дома.',
+    description: 'Итог 0–100: замки 20% (от 7), армия 20%, найм 10%, земли 10%, короны 10%, снабжение 10% (от 6), власть 10%, места на треках 10%; армия, найм, земли, короны и власть — относительно лучшего дома.',
     fn: (houses, power) => {
       const n = houses.length || 1;
       const army = new Map((power || []).map((p) => [p.house, +p.total]));
       const best = (f) => Math.max(1, ...houses.map(f));
-      const mA = best((h) => army.get(h.house) || 0), mL = best((h) => +h.lands), mC = best((h) => +h.crowns || 0), mP = best((h) => +h.power);
+      const mA = best((h) => army.get(h.house) || 0), mL = best((h) => +h.lands), mC = best((h) => +h.crowns || 0), mP = best((h) => +h.power), mM = best((h) => +h.muster || 0);
       return houses.map((h) => {
         const tracks = ((n + 1 - h.throne) + (n + 1 - h.fiefdoms) + (n + 1 - h.court)) / (3 * n);
-        const s = 30 * Math.min(1, h.castles / 7) + 20 * (army.get(h.house) || 0) / mA + 10 * h.lands / mL
+        const s = 20 * Math.min(1, h.castles / 7) + 20 * (army.get(h.house) || 0) / mA + 10 * (+h.muster || 0) / mM + 10 * h.lands / mL
           + 10 * (+h.crowns || 0) / mC + 10 * Math.min(1, h.supply / 6) + 10 * h.power / mP + 10 * tracks;
         const r1 = (x) => Math.round(x * 10) / 10;
         return { house: h.house, score: Math.round(s),
-          castles_pts: r1(30 * Math.min(1, h.castles / 7)), army_pts: r1(20 * (army.get(h.house) || 0) / mA),
+          castles_pts: r1(20 * Math.min(1, h.castles / 7)), army_pts: r1(20 * (army.get(h.house) || 0) / mA), muster_pts: r1(10 * (+h.muster || 0) / mM),
           lands_pts: r1(10 * h.lands / mL), crowns_pts: r1(10 * (+h.crowns || 0) / mC), supply_pts: r1(10 * Math.min(1, h.supply / 6)),
           power_pts: r1(10 * h.power / mP), tracks_pts: r1(10 * tracks) };
       }).sort((a, b) => b.score - a.score);
@@ -208,6 +208,8 @@
         c.append('b').text(value);
         return c;
       };
+      const mu = cell('cb-rg-muster', 'Найм', 'cbi-towers', r.muster ?? '—');
+      if (r.muster != null) mu.attr('title', `Очки найма ${r.muster}: крепостей ${r.strongholds ?? 0} (по 2), замков ${r.muster - 2 * (r.strongholds || 0)} (по 1)`);
       cell('cb-rg-lands', 'Земли', 'cbi-land', r.lands);
       cell('cb-rg-crowns', 'Короны', 'cbi-crownline', r.crowns ?? '—');
 
@@ -227,7 +229,7 @@
 
       const score = sc.get(r.house);
       const parts = (s.status === 'ok' && Array.isArray(s.data) ? s.data : []).find((x) => x.house === r.house);
-      const PARTS = [['castles_pts', 'Замки', '#c9a227'], ['army_pts', 'Армия', '#c0392b'], ['lands_pts', 'Земли', '#2f9e57'],
+      const PARTS = [['castles_pts', 'Замки', '#c9a227'], ['army_pts', 'Армия', '#c0392b'], ['muster_pts', 'Найм', '#1f9e9e'], ['lands_pts', 'Земли', '#2f9e57'],
         ['crowns_pts', 'Короны', '#e67e22'], ['supply_pts', 'Снабжение', '#a0703c'], ['power_pts', 'Власть', '#8e6cc9'], ['tracks_pts', 'Треки', '#3b6ea8']];
       const ix = row.append('div').attr('class', 'cb-rg-cell cb-rg-index cb-score')
         .attr('title', parts ? PARTS.map(([k, n]) => `${n} ${parts[k]}`).join(' + ') + ` = ${score}` : null);
