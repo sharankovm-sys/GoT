@@ -49,15 +49,15 @@
   window.cbIndex = function (houses, army) {
     const n = houses.length || 1;
     const best = (f) => Math.max(1, ...houses.map(f));
-    const mA = best((h) => army.get(h.house) || 0), mL = best((h) => +h.lands), mC = best((h) => +h.crowns || 0), mP = best((h) => +h.power), mM = best((h) => +h.muster || 0);
+    const mA = best((h) => army.get(h.house) || 0), mL = best((h) => +h.lands + (+h.seas || 0)), mC = best((h) => +h.crowns || 0), mP = best((h) => +h.power), mM = best((h) => +h.muster || 0);
     return houses.map((h) => {
       const tracks = ((h.throne === 1 ? 1 : 0) + (h.fiefdoms ? (n + 1 - h.fiefdoms) / n : 0) + (h.court && h.court <= 4 ? (5 - h.court) / 4 : 0)) / 3;
-      const s = 20 * Math.min(1, h.castles / 7) + 30 * (army.get(h.house) || 0) / mA + 10 * (+h.muster || 0) / mM + 10 * h.lands / mL
+      const s = 20 * Math.min(1, h.castles / 7) + 30 * (army.get(h.house) || 0) / mA + 10 * (+h.muster || 0) / mM + 10 * (+h.lands + (+h.seas || 0)) / mL
         + 5 * (+h.crowns || 0) / mC + 10 * Math.min(1, h.supply / 6) + 5 * h.power / mP + 10 * tracks;
       const r1 = (x) => Math.round(x * 10) / 10;
       return { house: h.house, score: Math.round(s),
         castles_pts: r1(20 * Math.min(1, h.castles / 7)), army_pts: r1(30 * (army.get(h.house) || 0) / mA), muster_pts: r1(10 * (+h.muster || 0) / mM),
-        lands_pts: r1(10 * h.lands / mL), crowns_pts: r1(5 * (+h.crowns || 0) / mC), supply_pts: r1(10 * Math.min(1, h.supply / 6)),
+        lands_pts: r1(10 * (+h.lands + (+h.seas || 0)) / mL), crowns_pts: r1(5 * (+h.crowns || 0) / mC), supply_pts: r1(10 * Math.min(1, h.supply / 6)),
         power_pts: r1(5 * h.power / mP), tracks_pts: r1(10 * tracks) };
     }).sort((a, b) => b.score - a.score);
   };
@@ -220,7 +220,8 @@
       };
       const mu = cell('cb-rg-muster', 'Найм', 'cbi-towers', r.muster ?? '—');
       if (r.muster != null) mu.attr('title', `Очки найма ${r.muster}: крепостей ${r.strongholds ?? 0} (по 2), замков ${r.muster - 2 * (r.strongholds || 0)} (по 1)`);
-      cell('cb-rg-lands', 'Земли', 'cbi-land', r.lands);
+      const ld = cell('cb-rg-lands', 'Земли', 'cbi-land', r.lands);
+      if (+r.seas) ld.attr('title', `Земли ${r.lands} + моря с кораблями ${r.seas}: в индексе считаются вместе`).append('small').text('+' + r.seas + ' м.');
       cell('cb-rg-crowns', 'Короны', 'cbi-crownline', r.crowns ?? '—');
 
       const sup = row.append('div').attr('class', 'cb-rg-cell cb-rg-supply').attr('title', 'Снабжение');
@@ -239,7 +240,7 @@
 
       const score = sc.get(r.house);
       const parts = (s.status === 'ok' && Array.isArray(s.data) ? s.data : []).find((x) => x.house === r.house);
-      const PARTS = [['castles_pts', 'Замки', '#c9a227'], ['army_pts', 'Армия', '#c0392b'], ['muster_pts', 'Найм', '#1f9e9e'], ['lands_pts', 'Земли', '#2f9e57'],
+      const PARTS = [['castles_pts', 'Замки', '#c9a227'], ['army_pts', 'Армия', '#c0392b'], ['muster_pts', 'Найм', '#1f9e9e'], ['lands_pts', 'Земли и моря', '#2f9e57'],
         ['crowns_pts', 'Короны', '#e67e22'], ['supply_pts', 'Снабжение', '#a0703c'], ['power_pts', 'Власть', '#8e6cc9'], ['tracks_pts', 'Треки', '#3b6ea8']];
       const ix = row.append('div').attr('class', 'cb-rg-cell cb-rg-index cb-score')
         .attr('title', parts ? PARTS.map(([k, n]) => `${n} ${parts[k]}`).join(' + ') + ` = ${score}` : null);
