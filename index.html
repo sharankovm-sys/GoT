@@ -31,8 +31,8 @@
   [hidden] { display: none !important; }
 </style>
 <script src="d3.min.js"></script>
-<script src="data.js"></script>
-<script src="shim.js"></script>
+<script>window.CB_V = Math.floor(Date.now() / 60000); /* свежие файлы, а не копия из кэша браузера */
+document.write('<script src="data.js?v=' + CB_V + '"><\/script><script src="shim.js?v=' + CB_V + '"><\/script>');</script>
 </head>
 <body>
 <div class="cb-page">
@@ -506,8 +506,7 @@
 </div>
 
 </div>
-<script src="calcs.js"></script>
-<script src="app.js"></script>
+<script>document.write('<script src="calcs.js?v=' + CB_V + '"><\/script><script src="app.js?v=' + CB_V + '"><\/script>');</script>
 <script>dash._run();</script>
 </body>
 </html>
