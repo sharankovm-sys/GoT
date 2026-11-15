@@ -69,7 +69,7 @@
 
   /* castle race */
   .cb-race { display: flex; flex-direction: column; gap: 6px; }
-  .cb-rg { display: grid; grid-template-columns: minmax(150px, 1.3fr) minmax(170px, 1.3fr) minmax(58px, .5fr) minmax(58px, .5fr) minmax(110px, .9fr) minmax(58px, .5fr) minmax(58px, .5fr) minmax(150px, 1.4fr);
+  .cb-rg { display: grid; grid-template-columns: minmax(150px, 1.3fr) minmax(170px, 1.3fr) minmax(58px, .5fr) minmax(58px, .5fr) minmax(58px, .5fr) minmax(110px, .9fr) minmax(58px, .5fr) minmax(58px, .5fr) minmax(150px, 1.4fr);
            align-items: center; column-gap: var(--cds-gap-md); }
   .cb-race-head { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: 0 var(--cds-pad-md) 2px calc(var(--cds-pad-md) + 4px); }
   .cb-race-head span { display: inline-flex; align-items: center; gap: 4px; justify-content: center; }
@@ -221,6 +221,7 @@
     <symbol id="cbi-crownline" viewBox="0 0 24 24"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/></symbol>
     <symbol id="cbi-land" viewBox="0 0 24 24"><path d="M3 19l6-10 4 6 2.5-3.5L21 19z"/><circle cx="16.5" cy="6.5" r="1.5"/></symbol>
     <symbol id="cbi-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/></symbol>
+    <symbol id="cbi-towers" viewBox="0 0 24 24"><path d="M3 21V7h1.5V5H6v2h1.5V5H9v2h1.5v14M13.5 21V11H15V9h1.5v2H18V9h1.5v2H21v10M2 21h20M6.75 21v-3a1 1 0 0 1 1.5 0v3"/></symbol>
   </defs>
 </svg>
 
@@ -256,10 +257,11 @@
 
     <section id="race">
       <h2 class="cb-h"><svg class="cb-ico"><use href="#cbi-castle"/></svg>Гонка за замками</h2>
-      <p class="cb-sub">Вся сила дома в одной строке. Для победы нужно 7 замков и крепостей. Короны — сколько корон в землях дома (дают власть при сборе власти и при «Игре престолов»). Армия — сила войск на карте. Индекс силы — итог по всем факторам от 0 до 100, как он считается — внизу страницы.</p>
+      <p class="cb-sub">Вся сила дома в одной строке. Для победы нужно 7 замков и крепостей. Короны — сколько корон в землях дома (дают власть при сборе власти и при «Игре престолов»). Найм — очки сбора войск: обычный замок даёт 1, крепость 2. Армия — сила войск на карте. Индекс силы — итог по всем факторам от 0 до 100, как он считается — внизу страницы.</p>
       <div class="cb-rg cb-race-head" aria-hidden="true">
         <span>Дом</span>
         <span><svg class="cb-ico"><use href="#cbi-castle"/></svg>Замки</span>
+        <span><svg class="cb-ico"><use href="#cbi-towers"/></svg>Найм</span>
         <span><svg class="cb-ico"><use href="#cbi-land"/></svg>Земли</span>
         <span><svg class="cb-ico"><use href="#cbi-crownline"/></svg>Короны</span>
         <span><svg class="cb-ico"><use href="#cbi-barrel"/></svg>Снабжение</span>
@@ -269,17 +271,18 @@
       </div>
       <div class="cb-race" data-draw="race" data-source="houses power strength"></div>
       <div class="cb-formula" id="formula">
-        <div class="cb-formula-head"><b>Как считается индекс силы</b><span>сумма семи частей, максимум 100 баллов; цвета совпадают с полосками индекса выше</span></div>
+        <div class="cb-formula-head"><b>Как считается индекс силы</b><span>сумма восьми частей, максимум 100 баллов; цвета совпадают с полосками индекса выше</span></div>
         <div class="cb-formula-bar">
-          <span style="flex: 30; --fc: #c9a227"><b>30</b>Замки<small>из 7 для победы</small></span>
+          <span style="flex: 20; --fc: #c9a227"><b>20</b>Замки<small>из 7 для победы</small></span>
           <span style="flex: 20; --fc: #c0392b"><b>20</b>Армия<small>к лучшему дому</small></span>
+          <span style="flex: 10; --fc: #1f9e9e"><b>10</b>Найм<small>к лучшему</small></span>
           <span style="flex: 10; --fc: #2f9e57"><b>10</b>Земли<small>к лучшему</small></span>
           <span style="flex: 10; --fc: #e67e22"><b>10</b>Короны<small>к лучшему</small></span>
           <span style="flex: 10; --fc: #a0703c"><b>10</b>Снабж.<small>из 6</small></span>
           <span style="flex: 10; --fc: #8e6cc9"><b>10</b>Власть<small>к лучшему</small></span>
           <span style="flex: 10; --fc: #3b6ea8"><b>10</b>Треки<small>места</small></span>
         </div>
-        <p class="cb-sub">Пример: 3 замка из 7 дают 30 × 3/7 ≈ 13 баллов, а армия 6 при лучшей армии 6 даёт все 20. «К лучшему» — доля от самого сильного дома по этому показателю. Треки — среднее место на трёх треках: первое место везде даёт 10 баллов. Наведите на индекс дома, чтобы увидеть его разбивку. Это оценка дашборда, а не правило игры.</p>
+        <p class="cb-sub">Пример: 3 замка из 7 дают 20 × 3/7 ≈ 9 баллов, а армия 6 при лучшей армии 6 даёт все 20. Найм — очки сбора войск: обычный замок даёт 1, крепость 2. «К лучшему» — доля от самого сильного дома по этому показателю. Треки — среднее место на трёх треках: первое место везде даёт 10 баллов. Наведите на индекс дома, чтобы увидеть его разбивку. Это оценка дашборда, а не правило игры.</p>
       </div>
     </section>
 
@@ -456,7 +459,7 @@
       <li>Мощь армии: пехота 1, рыцарь 2, корабль 1, осадная башня 4 (в игре она даёт 4 только при штурме замка или крепости, здесь считается её полная сила).</li>
       <li>Удача в приливе: сумма силы вытянутых карт минус ожидаемая (+0,92 за карту при колоде из 24 карт). Коэффициент — во сколько раз больше среднего. Бой «решил прилив», если без карт прилива победитель проиграл бы или вышла бы ничья.</li>
       <li>Короны и земли: земля принадлежит дому, если там его войска или жетон власти; родовые земли (Винтерфелл, Ланниспорт, Пайк, Хайгарден, Солнечное Копьё, Драконий Камень) остаются за домом, пока их никто не занял. Короны и замки взяты из карты игры.</li>
-      <li>Индекс силы (0–100) — оценка дашборда, а не правило игры: замки 30% (от 7 для победы), армия 20%, земли 10%, короны 10%, снабжение 10% (от 6), жетоны власти 10%, места на трёх треках 10%. Армия, земли, короны и власть считаются относительно лучшего дома.</li>
+      <li>Индекс силы (0–100) — оценка дашборда, а не правило игры: замки 20% (от 7 для победы), армия 20%, найм 10% (замок 1, крепость 2), земли 10%, короны 10%, снабжение 10% (от 6), жетоны власти 10%, места на трёх треках 10%. Армия, найм, земли, короны и власть считаются относительно лучшего дома.</li>
       <li>Иконки нарисованы для этого дашборда, это не иконки игры.</li>
     </ul>
   </details>
