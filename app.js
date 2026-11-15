@@ -42,7 +42,7 @@
   });
   dash.calc('power', {
     inputs: ['armies', 'cards'], title: 'Военная мощь домов',
-    description: 'Сила войск по дому: пехота 1, рыцарь 2, корабль 1, осадная башня 4; суша и море отдельно; сильнейший отряд; сила карт на руке.',
+    description: 'Сила войск по дому: пехота 1, рыцарь 2, корабль 1, осадная башня 2; суша и море отдельно; сильнейший отряд; сила карт на руке.',
     fn: (armies, cards) => cbPower(armies, cards),
   });
   // Индекс силы: одна формула для гонки и для графиков по раундам. army — Map дом -> сила армии.
@@ -52,18 +52,18 @@
     const mA = best((h) => army.get(h.house) || 0), mL = best((h) => +h.lands), mC = best((h) => +h.crowns || 0), mP = best((h) => +h.power), mM = best((h) => +h.muster || 0);
     return houses.map((h) => {
       const tracks = ((h.throne === 1 ? 1 : 0) + (h.fiefdoms ? (n + 1 - h.fiefdoms) / n : 0) + (h.court && h.court <= 4 ? (5 - h.court) / 4 : 0)) / 3;
-      const s = 20 * Math.min(1, h.castles / 7) + 20 * (army.get(h.house) || 0) / mA + 10 * (+h.muster || 0) / mM + 10 * h.lands / mL
-        + 10 * (+h.crowns || 0) / mC + 10 * Math.min(1, h.supply / 6) + 10 * h.power / mP + 10 * tracks;
+      const s = 20 * Math.min(1, h.castles / 7) + 30 * (army.get(h.house) || 0) / mA + 10 * (+h.muster || 0) / mM + 10 * h.lands / mL
+        + 5 * (+h.crowns || 0) / mC + 10 * Math.min(1, h.supply / 6) + 5 * h.power / mP + 10 * tracks;
       const r1 = (x) => Math.round(x * 10) / 10;
       return { house: h.house, score: Math.round(s),
-        castles_pts: r1(20 * Math.min(1, h.castles / 7)), army_pts: r1(20 * (army.get(h.house) || 0) / mA), muster_pts: r1(10 * (+h.muster || 0) / mM),
-        lands_pts: r1(10 * h.lands / mL), crowns_pts: r1(10 * (+h.crowns || 0) / mC), supply_pts: r1(10 * Math.min(1, h.supply / 6)),
-        power_pts: r1(10 * h.power / mP), tracks_pts: r1(10 * tracks) };
+        castles_pts: r1(20 * Math.min(1, h.castles / 7)), army_pts: r1(30 * (army.get(h.house) || 0) / mA), muster_pts: r1(10 * (+h.muster || 0) / mM),
+        lands_pts: r1(10 * h.lands / mL), crowns_pts: r1(5 * (+h.crowns || 0) / mC), supply_pts: r1(10 * Math.min(1, h.supply / 6)),
+        power_pts: r1(5 * h.power / mP), tracks_pts: r1(10 * tracks) };
     }).sort((a, b) => b.score - a.score);
   };
   dash.calc('strength', {
     inputs: ['houses', 'power'], title: 'Индекс силы дома',
-    description: 'Итог 0–100: замки 20% (от 7), армия 20%, найм 10%, земли 10%, короны 10%, снабжение 10% (от 6), власть 10%, места на треках 10%; армия, найм, земли, короны и власть — относительно лучшего дома.',
+    description: 'Итог 0–100: замки 20% (от 7), армия 30%, найм 10%, земли 10%, короны 5%, снабжение 10% (от 6), власть 5%, места на треках 10%; армия, найм, земли, короны и власть — относительно лучшего дома.',
     fn: (houses, power) => cbIndex(houses, new Map((power || []).map((p) => [p.house, +p.total]))),
   });
   dash.calc('histIndex', {
@@ -328,7 +328,7 @@
     if (d.status !== 'ok' || !Array.isArray(d.data) || !d.data.length) { el.replaceChildren(); el.textContent = d.status === 'error' ? 'Не удалось загрузить' : '—'; return; }
     cbBars(el, d.data.map((r) => {
       const c = cbHouse(r.house).c;
-      const parts = [['Пехота', +r.footmen * 1, 1], ['Рыцари', +r.knights * 2, 0.72], ['Корабли', +r.ships * 1, 0.45], ['Осадные башни', +r.siege * 4, 0.25]];
+      const parts = [['Пехота', +r.footmen * 1, 1], ['Рыцари', +r.knights * 2, 0.72], ['Корабли', +r.ships * 1, 0.45], ['Осадные башни', +r.siege * 2, 0.25]];
       let acc = 0;
       return {
         label: r.house, text: r.total + ' силы',
