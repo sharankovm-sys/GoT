@@ -190,7 +190,9 @@
       nm.append('b').text(r.house);
       nm.append('span').text(r.player);
 
-      const cs = row.append('div').attr('class', 'cb-rg-cell cb-rg-castles');
+      const cs = row.append('div').attr('class', 'cb-rg-cell cb-rg-castles')
+        .classed('cb-warn5', +r.castles === 5).classed('cb-warn6', +r.castles >= 6)
+        .attr('title', +r.castles >= 6 ? 'До победы остался 1 замок!' : +r.castles === 5 ? 'До победы осталось 2 замка' : null);
       const pips = cs.append('div').attr('class', 'cb-pips').attr('role', 'img').attr('aria-label', r.house + ': ' + r.castles + ' из ' + CB_WIN + ' замков');
       for (let i = 0; i < CB_WIN; i++) {
         const own = i < +r.castles;
@@ -293,6 +295,7 @@
             const td = d3.select(this);
             td.selectAll('*').remove();
             td.text(c === 'power' ? '' : r[c]);
+            if (c === 'castles') td.attr('class', +r.castles >= 6 ? 'cb-warn6' : +r.castles === 5 ? 'cb-warn5' : null);
             if (c === 'power') {
               td.append('span').text(r.power);
               const t = td.append('span').attr('class', 'cb-tokens').attr('aria-hidden', 'true');
