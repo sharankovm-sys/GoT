@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cum back 2 — сводка партии</title>
+<title>Летопись партий — Swords and Ravens</title>
 <meta name="robots" content="noindex">
 <style>
   :root {
@@ -32,7 +32,15 @@
 </style>
 <script src="d3.min.js"></script>
 <script>window.CB_V = Math.floor(Date.now() / 60000); /* свежие файлы, а не копия из кэша браузера */
-document.write('<script src="data.js?v=' + CB_V + '"><\/script><script src="shim.js?v=' + CB_V + '"><\/script>');</script>
+document.write('<script src="games.js?v=' + CB_V + '"><\/script>');</script>
+<script>(function () {
+  /* какую партию показать: ?game=<id> в адресе, иначе первая в списке (идущая) */
+  var games = window.CB_GAMES || [], ids = games.map(function (g) { return g.id; });
+  var q = new URLSearchParams(location.search).get('game');
+  window.CB_GAME = ids.indexOf(q) >= 0 ? q : (ids[0] || null);
+  var file = window.CB_GAME ? 'data-' + window.CB_GAME + '.js' : 'data.js';
+  document.write('<script src="' + file + '?v=' + CB_V + '"><\/script><script src="shim.js?v=' + CB_V + '"><\/script>');
+})();</script>
 </head>
 <body>
 <div class="cb-page">
@@ -354,6 +362,28 @@ document.write('<script src="data.js?v=' + CB_V + '"><\/script><script src="shim
     #charts > #hist-power { grid-column: 1; }
     #charts > #hist-army { grid-column: 2; }
   }
+  /* переключатель партий */
+  .cb-games { margin-bottom: 4px; }
+  .cb-games-cap { display: none; margin: 4px 6px -6px; color: var(--cb-faint); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; }
+  .cb-gamelist { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: none; }
+  .cb-game { flex: none; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border: 1px solid var(--cb-line); border-radius: 3px;
+             background: var(--cb-surface); color: var(--cb-text); text-decoration: none; }
+  .cb-game b { font-family: var(--cb-serif); font-weight: 400; font-size: 16px; line-height: 1.2; }
+  .cb-game small { color: var(--cb-faint); font-size: 11.5px; white-space: nowrap; }
+  .cb-game small i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--cb-faint); margin-right: 6px; vertical-align: 1px; }
+  .cb-game.cb-live small i { background: var(--cb-moss); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cb-moss) 20%, transparent); }
+  .cb-game:hover { border-color: color-mix(in srgb, var(--cb-gold) 50%, var(--cb-line)); }
+  .cb-game[aria-current=page] { border-color: var(--cb-gold); background: color-mix(in srgb, var(--cb-gold) 12%, var(--cb-surface)); }
+  .cb-game[aria-current=page] b { color: var(--cb-gold); }
+  .cb-game:focus-visible { outline: 2px solid var(--cb-gold); outline-offset: 2px; }
+  @container (min-width: 980px) {
+    .cb-games { padding-bottom: 14px; border-bottom: 1px solid var(--cb-line); }
+    .cb-games-cap { display: block; }
+    .cb-gamelist { flex-direction: column; overflow: visible; gap: 2px; padding: 10px 0 0; }
+    .cb-game { background: none; border: 0; border-left: 2px solid transparent; border-radius: 0 3px 3px 0; padding: 9px 10px; }
+    .cb-game:hover { background: color-mix(in srgb, var(--cb-gold) 6%, transparent); }
+    .cb-game[aria-current=page] { border-left-color: var(--cb-gold); background: color-mix(in srgb, var(--cb-gold) 12%, transparent); }
+  }
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -390,7 +420,7 @@ document.write('<script src="data.js?v=' + CB_V + '"><\/script><script src="shim
 <div class="cb">
   <header id="summary" class="cb-hero">
     <p class="cb-kicker">Swords and Ravens · летопись партии</p>
-    <h1 class="cb-title">Cum back 2 — сводка партии</h1>
+    <h1 class="cb-title"><span data-game-name>Партия</span> — сводка</h1>
     <p class="cb-lede">
       Раунд <b data-draw="round" data-source="status" data-field="round" data-row="0">—</b> из <b data-draw="maxRounds" data-source="status" data-field="max_rounds" data-row="0">—</b>.
       Больше всего замков (<b data-draw="topCastles" data-source="leaders" data-field="castles" data-row="0">—</b>) у: <b data-draw="topNames" data-source="leaders" data-field="names" data-row="0">—</b>.
@@ -405,7 +435,11 @@ document.write('<script src="data.js?v=' + CB_V + '"><\/script><script src="shim
 
   <aside class="cb-side" id="side">
     <div class="cb-side-in">
-      <div class="cb-brand" aria-hidden="true"><span class="cb-mono">C</span><span><b>Cum back 2</b><small>летопись партии</small></span></div>
+      <div class="cb-brand" aria-hidden="true"><span class="cb-mono">Л</span><span><b>Летопись</b><small>наших партий</small></span></div>
+      <div class="cb-games" id="games" hidden>
+        <p class="cb-games-cap">Партии</p>
+        <nav class="cb-gamelist" aria-label="Партии"></nav>
+      </div>
       <p class="cb-side-cap" aria-hidden="true">Разделы</p>
     <nav class="cb-tabs" role="tablist" id="tabs" aria-label="Разделы">
       <button class="cb-tab" role="tab" aria-selected="true" aria-controls="overview" data-tab="overview" id="tab-overview"><span class="cb-num">01</span><svg class="cb-ico"><use href="#cbi-compass"/></svg>Обзор</button>
@@ -666,6 +700,24 @@ document.write('<script src="data.js?v=' + CB_V + '"><\/script><script src="shim
 </div>
 </div>
 <script>document.write('<script src="calcs.js?v=' + CB_V + '"><\/script><script src="app.js?v=' + CB_V + '"><\/script>');</script>
+<script>(function () {
+  var games = window.CB_GAMES || [], box = document.getElementById('games');
+  var cur = games.filter(function (g) { return g.id === window.CB_GAME; })[0];
+  document.querySelectorAll('[data-game-name]').forEach(function (el) { el.textContent = cur ? cur.name : 'Партия'; });
+  if (cur) document.title = cur.name + ' — летопись партии';
+  if (!box || !games.length) return;
+  var nav = box.querySelector('.cb-gamelist');
+  games.forEach(function (g) {
+    var a = document.createElement('a'), b = document.createElement('b'), s = document.createElement('small'), i = document.createElement('i');
+    a.className = 'cb-game' + (g.state === 'ONGOING' ? ' cb-live' : '');
+    a.href = '?game=' + encodeURIComponent(g.id);
+    if (g.id === window.CB_GAME) a.setAttribute('aria-current', 'page');
+    b.textContent = g.name;
+    s.append(i, (g.state === 'ONGOING' ? 'идёт' : 'завершена') + ' · раунд ' + (g.round != null ? g.round : '—') + (g.max_rounds ? ' из ' + g.max_rounds : ''));
+    a.append(b, s); nav.append(a);
+  });
+  box.hidden = false;
+})();</script>
 <script>dash._run();</script>
 </body>
 </html>
